@@ -1,0 +1,4 @@
+float64 desired_x
+float64 desired_y
+---
+bool valid_position
