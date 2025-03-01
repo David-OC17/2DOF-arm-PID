@@ -1,0 +1,23 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/david/Documents/UNI_S.6/2DOF-arm-PID/install/desired_position_pkg/include/**",
+        "/home/david/miniconda3/envs/ros2/include/**",
+        "/opt/ros/humble/include/**",
+        "/home/david/Documents/UNI_S.6/2DOF-arm-PID/src/desired_position_pkg/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}
