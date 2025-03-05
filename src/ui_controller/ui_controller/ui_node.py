@@ -1,3 +1,20 @@
+"""
+UIControllerNode: ROS2 Node for Streamlit UI Communication
+
+Launches Streamlit, uses pipes to receive UI data, and distinguishes
+it from console output.
+
+    - Launches Streamlit (`ui.py`).
+    - Receives UI data via pipes.
+    - Separates UI data ("UI_DATA:") from console output.
+    - Logs UI data, prints console output.
+    - Graceful Streamlit shutdown.
+
+Usage:
+    - Run: `ros2 run <package> ui_controller`.
+    - UI data: "UI_DATA:x:<x>,y:<y>\n".
+"""
+
 import rclpy
 from rclpy.node import Node
 import subprocess
@@ -30,6 +47,8 @@ class UIControllerNode(Node):
 
         self.get_logger().info("✅ Streamlit UI Started")
 
+
+    # Handle data passed from child UI process
     def receive_data(self):
         if hasattr(self, 'pipe_reader') and self.pipe_reader:
             try:
@@ -46,6 +65,7 @@ class UIControllerNode(Node):
                     else:
                         # Handle regular console output from Streamlit
                         print(line.strip()) #Print the line without the newline character.
+                        
             except BrokenPipeError:
                 self.get_logger().warning("Streamlit process closed, pipe broken.")
                 self.pipe_reader.close()
