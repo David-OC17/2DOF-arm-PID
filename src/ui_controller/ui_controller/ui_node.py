@@ -17,10 +17,13 @@ Usage:
 
 import rclpy
 from rclpy.node import Node
+from desired_position_pkg.srv import DesiredPosition
+
 import subprocess
 import os
 import signal
 import sys
+from typing import Tuple
 
 class UIControllerNode(Node):
     def __init__(self):
@@ -48,8 +51,31 @@ class UIControllerNode(Node):
         self.get_logger().info("✅ Streamlit UI Started")
 
 
+    def send_data_to_server(self, client = "RunnableClient", values: Tuple = (0,0)):
+
+        x , y = values
+        self.get_logger().info(f"Sending data recieved from UI: x={x}, y={y}")
+
+        #Send data to inverse kinematics server
+        request = DesiredPosition.Request()
+        request.desired_x = x
+        request.desired_y = y
+        
+        future = client.call_async(request)
+        rclpy.spin_until_future_complete(self, future)
+        
+        if future.result() is not None:
+            if future.result().valid_position:
+                self.get_logger().info(f"Position ({x}, {y}) is valid. The robot arm will move to this position.")
+            else:
+                self.get_logger().warn(f"Position ({x}, {y}) is invalid. Please enter a new coordinate.")
+        else:
+            self.get_logger().error("Failed to receive a response from the service.")
+
+
+
     # Handle data passed from child UI process
-    def receive_data(self):
+    def receive_data(self) -> Tuple[float, float]:
         if hasattr(self, 'pipe_reader') and self.pipe_reader:
             try:
                 line = self.pipe_reader.readline()
@@ -57,9 +83,14 @@ class UIControllerNode(Node):
                     if line.startswith("UI_DATA:"):  # Check for the prefix
                         try:
                             data = line.replace("UI_DATA:", "")  # Remove the prefix
-                            x_val = data.split("x:")[1].split(",")[0]
-                            y_val = data.split("y:")[1].strip()
-                            self.get_logger().info(f"Received UI Data: x={x_val}, y={y_val}")
+                            x_val = float(data.split("x:")[1].split(",")[0])
+                            y_val = float(data.split("y:")[1].strip())
+                            #self.get_logger().info(f"Received UI Data: x={x_val}, y={y_val}")
+
+                            return (x_val , y_val)
+
+
+
                         except (IndexError, ValueError) as e:
                             self.get_logger().warning(f"Invalid UI Data: {e}, Line: {line}")
                     else:
@@ -78,14 +109,25 @@ class UIControllerNode(Node):
             self.streamlit_process.wait()
         super().destroy_node()
 
+
 def main(args=None):
     rclpy.init(args=args)
     node = UIControllerNode()
 
+    client = node.create_client(DesiredPosition, 'desiredPosition')
+    
+    while not client.wait_for_service(timeout_sec=1.0):
+        node.get_logger().warn('Waiting for desiredPosition service...')
+
     try:
         while rclpy.ok():
             rclpy.spin_once(node, timeout_sec=0.1)
-            node.receive_data()
+            values = node.receive_data()
+
+            if(values):
+                node.send_data_to_server(client, values)
+
+            
     except KeyboardInterrupt:
         pass
     finally:
