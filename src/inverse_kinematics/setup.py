@@ -20,7 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'inverse_kinematics_server = inverse_kinematics_server.main'
+            'inverse_kinematics_server = inverse_kinematics.inverse_kinematics_server:main'
         ],
     },
 )
