@@ -44,14 +44,14 @@ class UIControllerNode(Node):
             stdin=subprocess.DEVNULL
         )
 
-        # Close the write end in the parent
+        # Close the write end in the parent (we only want to read)
         os.close(w)
         self.pipe_reader = os.fdopen(r, 'r')  # Turn the read end into a file object
 
         self.get_logger().info("✅ Streamlit UI Started")
 
 
-    def send_data_to_server(self, client = "RunnableClient", values: Tuple = (0,0)):
+    def send_to_kinematics_server(self, client = "RunnableClient", values: Tuple = (0,0)):
 
         x , y = values
         self.get_logger().info(f"Sending data recieved from UI: x={x}, y={y}")
@@ -127,7 +127,7 @@ def main(args=None):
             values = node.receive_data()
 
             if(values):
-                node.send_data_to_server(client, values)
+                node.send_to_kinematics_server(client, values)
 
             
     except KeyboardInterrupt:
