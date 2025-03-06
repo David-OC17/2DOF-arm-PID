@@ -11,7 +11,7 @@ it from console output.
     - Graceful Streamlit shutdown.
 
 Usage:
-    - Run: `ros2 run <package> ui_controller`.
+    - Run: `ros2 run ui_controller ui_node`.
     - UI data: "UI_DATA:x:<x>,y:<y>\n".
 """
 
@@ -67,8 +67,10 @@ class UIControllerNode(Node):
         if future.result() is not None:
             if future.result().valid_position:
                 self.get_logger().info(f"Position ({x}, {y}) is valid. The robot arm will move to this position.")
+                # TODO: Return to UI
             else:
                 self.get_logger().warn(f"Position ({x}, {y}) is invalid. Please enter a new coordinate.")
+                # TODO: Return to UI
         else:
             self.get_logger().error("Failed to receive a response from the service.")
 
