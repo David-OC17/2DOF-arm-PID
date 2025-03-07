@@ -5,8 +5,8 @@ import matplotlib.patches as patches
 import sys
 
 # Arm parameters (lengths of links)
-L1 = 5
-L2 = 3
+L1 = 120
+L2 = 88
 
 def inverse_kinematics(x, y):
     """Compute joint angles given end-effector position (x, y)"""

@@ -44,8 +44,8 @@ class InverseKinematicsServer(Node):
         self.get_logger().info("Inverse Kinematics Service is ready.")
 
         # TODO adjust these values to real ones
-        self.L1 = 1
-        self.L2 = 1
+        self.L1 = 120 # mm
+        self.L2 = 88  # mm
 
         self.min_valid_y_mm = -15
 
