@@ -17,6 +17,9 @@ _deps
 ### CMake Patch ###
 CMakeUserPresets.json
 
+### VS Code ###
+.vscode
+
 # External projects
 *-prefix/
 
