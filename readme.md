@@ -18,6 +18,7 @@ ros2 launch launch_project.py
 
 - [@David-OC17](https://github.com/David-OC17)
 - [@FrediRomo](https://www.github.com/frediromo)
-- [@Polo280]()
-- [@CodingMaster8]()
-- [@elgithubdesebas]()
+- [@Polo280](https://www.github.com/Polo280)
+- [@CodingMaster8](https://www.github.com/CodingMaster8)
+- [@Sebastian-Pulido04](https://www.github.com/Sebastian-Pulido04)
+- [@NoeRosales22](https://www.github.com/NoeRosales22)
