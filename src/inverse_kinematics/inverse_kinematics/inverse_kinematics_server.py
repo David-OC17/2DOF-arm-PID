@@ -100,10 +100,10 @@ class InverseKinematicsServer(Node):
         cos_theta2 = (x**2 + y**2 - self.L1**2 - self.L2**2) / (2*self.L1*self.L2)
         sin_theta2 = (1-cos_theta2**2)**(1/2)
 
-        joint_angle_solution.theta2_solution1 = math.degrees(math.atan2(sin_theta2 / cos_theta2))
-        joint_angle_solution.theta1_solution1 = math.degrees(math.atan2(y/x) - math.atan2((self.L2*math.sin(math.radians(joint_angle_solution.theta2_solution1))) / (self.L1 + self.L2*math.cos(math.radians(joint_angle_solution.theta2_solution1)))))
-        joint_angle_solution.theta2_solution2 = math.degrees(math.atan2(-sin_theta2 / cos_theta2))
-        joint_angle_solution.theta1_solution2 = math.degrees(math.atan2(y/x) - math.atan2((self.L2*math.sin(math.radians(joint_angle_solution.theta2_solution2))) / (self.L1 + self.L2*math.cos(math.radians(joint_angle_solution.theta2_solution2)))))
+        joint_angle_solution.theta2_solution1 = math.degrees(math.atan2(sin_theta2, cos_theta2))
+        joint_angle_solution.theta1_solution1 = math.degrees(math.atan2(y,x) - math.atan2((self.L2*math.sin(math.radians(joint_angle_solution.theta2_solution1))) , (self.L1 + self.L2*math.cos(math.radians(joint_angle_solution.theta2_solution1)))))
+        joint_angle_solution.theta2_solution2 = math.degrees(math.atan2(-sin_theta2, cos_theta2))
+        joint_angle_solution.theta1_solution2 = math.degrees(math.atan2(y,x) - math.atan2((self.L2*math.sin(math.radians(joint_angle_solution.theta2_solution2))) , (self.L1 + self.L2*math.cos(math.radians(joint_angle_solution.theta2_solution2)))))
 
         if joint_angle_solution.theta2_solution1 == joint_angle_solution.theta2_solution2:
             joint_angle_solution.theta2_solution2 = math.inf
