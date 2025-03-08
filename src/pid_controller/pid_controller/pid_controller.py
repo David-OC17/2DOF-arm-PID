@@ -31,8 +31,8 @@ class PID_Controller(Node):
         self.output = [0.0, 0.0]
         # ROS 
         self.publisher = self.create_publisher(Float64MultiArray, 'PID_Output', 10)
-        self.client_target = self.create_subscription(Float64MultiArray, 'desiredAnglesPID', self.target_changed_callback)
-        self.client_measurement = self.create_subscription(Float32MultiArray, 'desired_angles', self.measurement_changed_callback)
+        self.client_target = self.create_subscription(Float64MultiArray, 'desiredAnglesPID', self.target_changed_callback, 10)
+        self.client_measurement = self.create_subscription(Float32MultiArray, 'desired_angles', self.measurement_changed_callback, 10)
 
     def target_changed_callback(self, data):
         ''' Target in format [theta1, theta2] for joints '''
