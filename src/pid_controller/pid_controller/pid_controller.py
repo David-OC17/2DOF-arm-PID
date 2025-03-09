@@ -1,7 +1,7 @@
 '''
-Provide the ability to control the 2 DOF motor actuators via a PID (or PD) partial state feedback.
+Provide the ability to control the 2 DOF motor actuators via a PID (or PD) complete state feedback.
 Calculate the required (voltage1, voltage2) for the motors from some desired reference
-(theta1, theta2) given by a topic desiredJoint.
+(velocity1, velocity2, theta1, theta2) given by a topic desiredJoint. (Angular velocity)
 '''
 
 import time
@@ -14,56 +14,72 @@ from std_msgs.msg import Float64, Float32MultiArray, Float64MultiArray
 class PID_Controller(Node):
     def __init__(self, kp:float, ki:float, kd:float):
         super().__init__('pid_controller_node')
-        # PID tune parameters 
+        # PID parameters 
         self.kp = kp
         self.ki = ki
         self.kd = kd
-        # Error, integral and derivative 
-        self.error = [0.0, 0.0]
+        
+        # Desired positions only (theta1, theta2)
+        self.target_angles = [0.0, 0.0]  
+        # Actual states (vel1, vel2, theta1, theta2)
+        self.actual_vel = [0.0, 0.0]          
+        self.actual_theta = [0.0, 0.0]        
+        
+        # PID terms
+        self.error_pos = [0.0, 0.0]          
         self.error_integral = [0.0, 0.0]
-        self.error_derivative = [0.0, 0.0]
-        # Auxiliar variables 
-        self.last_error = [0.0, 0.0]
-        self.target = [0.0, 0.0]
-        self.measurement = [0.0, 0.0]
-        self.last_update_time = time.time()
-        # Output 
-        self.output = [0.0, 0.0]
-        # ROS 
-        self.publisher = self.create_publisher(Float64MultiArray, 'PID_Output', 10)
-        self.client_target = self.create_subscription(Float64MultiArray, 'desiredAnglesPID', self.target_changed_callback, 10)
-        self.client_measurement = self.create_subscription(Float32MultiArray, 'desired_angles', self.measurement_changed_callback, 10)
+        
+        # ROS interfaces
+        self.publisher = self.create_publisher(Float64MultiArray, 'control_law', 10)
+        self.target_sub = self.create_subscription(Float64MultiArray, 'desiredJoint', self.target_callback, 10)
+        self.joint_state_sub = self.create_subscription(Float32MultiArray, 'joint_states', self.joint_state_callback, 10)
+        self.last_update_time = self.get_clock().now()
 
-    def target_changed_callback(self, data):
-        ''' Target in format [theta1, theta2] for joints '''
-        self.target = data[:]
+    def target_callback(self, msg):
+        ''' Receive desired ANGLES: [theta1, theta2] '''
+        if len(msg.data) == 2:
+            self.target_angles = msg.data
+        else:
+            self.get_logger().error(f"Invalid desiredJoint message. Expected 2 angles, got {len(msg.data)}")
 
-    def measurement_changed_callback(self, data):
-        ''' Retrieve the motor positions from Kalman filter '''
-        self.measurement = data[0:1]
-        self.updatePID()
+    def joint_state_callback(self, msg):
+        ''' Receive current state: [vel1, vel2, theta1, theta2] '''
+        if len(msg.data) == 4:
+            self.actual_vel = msg.data[0:2]
+            self.actual_theta = msg.data[2:4]
+            self.updatePID()
+        else:
+            self.get_logger().error(f"Invalid joint_states message. Expected 4 elements, got {len(msg.data)}")
 
     def updatePID(self):
-        ''' Compute PID for both motor joints '''
-        dt = time.time() - self.last_update_time
-        if(dt <= 0):
-            self.get_logger().info("Invalid PID iteration: dt = 0")
+        ''' Compute PD control using position error + velocity feedback '''
+        current_time = self.get_clock().now()
+        dt = (current_time - self.last_update_time).nanoseconds * 1e-9
+        
+        if dt < 1e-6:  # Minimum time delta check
             return
 
         for i in range(2):
-            self.error[i] = self.target[i] - self.measurement[i]
-            delta_error = (self.error[i] - self.last_error[i]) / dt
-            self.output[i] = (self.error[i] * self.kp) + (self.error_integral[i] * self.ki) + (delta_error *  self.kd)
-            self.error_integral[i] += (self.error[i] * dt)
-            self.last_error[i] = self.error[i]
+            # Position error (desired theta - actual theta)
+            self.error_pos[i] = self.target_angles[i] - self.actual_theta[i]
+            
+            # Integral term (anti-windup recommended for real systems)
+            self.error_integral[i] += self.error_pos[i] * dt
+            
+            # Derivative term: uses ACTUAL VELOCITY for damping (assumes desired velocity = 0)
+            # This is equivalent to -Kd * actual_vel since desired_vel = 0
+            control_output = (self.kp * self.error_pos[i] +
+                            self.ki * self.error_integral[i] -
+                            self.kd * self.actual_vel[i])
 
-        self.last_update_time = time.time()
+            self.output[i] = int(control_output)
 
-        # Publish to topic 
-        output_msg = Float64MultiArray()
-        output_msg.data = [self.output[0], self.output[1]]
-        self.publisher.publish(output_msg)
+        self.last_update_time = current_time
         
+        # Publish voltages
+        output_msg = Float64MultiArray()
+        output_msg.data = self.output
+        self.publisher.publish(output_msg)
 
 def main():
     rclpy.init()
