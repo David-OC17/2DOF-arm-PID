@@ -19,67 +19,70 @@ class PID_Controller(Node):
         self.ki = ki
         self.kd = kd
         
-        # Desired positions only (theta1, theta2)
-        self.target_angles = [0.0, 0.0]  
-        # Actual states (vel1, vel2, theta1, theta2)
-        self.actual_vel = [0.0, 0.0]          
-        self.actual_theta = [0.0, 0.0]        
-        
-        # PID terms
-        self.error_pos = [0.0, 0.0]          
+        # State initialization (crucial for startup)
+        self.target_angles = [0.0, 0.0]  # Desired angles
+        self.actual_vel = [0.0, 0.0]     # Initialize to zero
+        self.actual_theta = [0.0, 0.0]   # Initialize to zero
         self.error_integral = [0.0, 0.0]
         
         # ROS interfaces
         self.publisher = self.create_publisher(Float64MultiArray, 'control_law', 10)
         self.target_sub = self.create_subscription(Float64MultiArray, 'desiredJoint', self.target_callback, 10)
         self.joint_state_sub = self.create_subscription(Float32MultiArray, 'joint_states', self.joint_state_callback, 10)
+        
+        # Time tracking using ROS clock
         self.last_update_time = self.get_clock().now()
 
     def target_callback(self, msg):
-        ''' Receive desired ANGLES: [theta1, theta2] '''
+        ''' Handle desired angles and trigger immediate PID update '''
         if len(msg.data) == 2:
             self.target_angles = msg.data
+            self.get_logger().info(f"New target received: {self.target_angles}")
+            self.updatePID()  # Critical: Trigger PID with initial zero states
         else:
-            self.get_logger().error(f"Invalid desiredJoint message. Expected 2 angles, got {len(msg.data)}")
+            self.get_logger().error("Invalid desiredJoint message. Expected 2 angles.")
 
     def joint_state_callback(self, msg):
-        ''' Receive current state: [vel1, vel2, theta1, theta2] '''
+        ''' Update actual state and trigger PID '''
         if len(msg.data) == 4:
             self.actual_vel = msg.data[0:2]
             self.actual_theta = msg.data[2:4]
             self.updatePID()
         else:
-            self.get_logger().error(f"Invalid joint_states message. Expected 4 elements, got {len(msg.data)}")
+            self.get_logger().error("Invalid joint_states message. Expected 4 elements.")
 
     def updatePID(self):
-        ''' Compute PD control using position error + velocity feedback '''
+        ''' Compute control output using latest available data '''
         current_time = self.get_clock().now()
         dt = (current_time - self.last_update_time).nanoseconds * 1e-9
         
-        if dt < 1e-6:  # Minimum time delta check
+        if dt < 1e-6:  # Avoid division by zero
             return
 
+        # Calculate position errors
+        error_pos = [
+            self.target_angles[0] - self.actual_theta[0],
+            self.target_angles[1] - self.actual_theta[1]
+        ]
+
+        # PID computation
+        voltages = [0.0, 0.0]
         for i in range(2):
-            # Position error (desired theta - actual theta)
-            self.error_pos[i] = self.target_angles[i] - self.actual_theta[i]
+            self.error_integral[i] += error_pos[i] * dt
             
-            # Integral term (anti-windup recommended for real systems)
-            self.error_integral[i] += self.error_pos[i] * dt
-            
-            # Derivative term: uses ACTUAL VELOCITY for damping (assumes desired velocity = 0)
-            # This is equivalent to -Kd * actual_vel since desired_vel = 0
-            control_output = (self.kp * self.error_pos[i] +
-                            self.ki * self.error_integral[i] -
-                            self.kd * self.actual_vel[i])
+            # Control law: Kp*e + Ki*∫e dt + Kd*(-velocity)
+            voltages[i] = (
+                self.kp * error_pos[i] +
+                self.ki * self.error_integral[i] -
+                self.kd * self.actual_vel[i]
+            )
+    
 
-            self.output[i] = int(control_output)
-
-        self.last_update_time = current_time
-        
-        # Publish voltages
+        # Publish immediately
         output_msg = Float64MultiArray()
-        output_msg.data = self.output
+        output_msg.data = int(voltages)
         self.publisher.publish(output_msg)
+        self.last_update_time = current_time
 
 def main():
     rclpy.init()
