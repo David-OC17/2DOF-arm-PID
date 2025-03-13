@@ -80,7 +80,7 @@ class PID_Controller(Node):
 
         # Publish immediately
         output_msg = Float64MultiArray()
-        output_msg.data = int(voltages)
+        output_msg.data = voltages
         self.publisher.publish(output_msg)
         self.last_update_time = current_time
 
