@@ -40,16 +40,16 @@ class InverseKinematicsServer(Node):
     def __init__(self):
         super().__init__('inverse_kinematics_service')
         self.srv = self.create_service(DesiredPosition, 'desiredPosition', self.handle_position_request)
-        self.publisher = self.create_publisher(Float64MultiArray, 'desiredAnglesPID', 10)
+        self.publisher = self.create_publisher(Float64MultiArray, 'desiredJoint', 10)
         self.get_logger().info("Inverse Kinematics Service is ready.")
 
         # TODO adjust these values to real ones
         self.L1 = 120 # mm
-        self.L2 = 88  # mm
+        self.L2 = 88 # mm
 
         self.min_valid_y_mm = -15
 
-        self.min_valid_theta1_deg = -10
+        self.min_valid_theta1_deg = -1
         self.min_valid_theta2_deg = -150
 
         self.max_valid_theta1_deg = 190

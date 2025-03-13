@@ -3,10 +3,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import sys
+import math
 
 # Arm parameters (lengths of links)
 L1 = 120
 L2 = 88
+
+min_valid_theta1_deg = -1
+min_valid_theta2_deg = -150
+
+max_valid_theta1_deg = 190
+max_valid_theta2_deg = 150
 
 def inverse_kinematics(x, y):
     """Compute joint angles given end-effector position (x, y)"""
@@ -15,10 +22,18 @@ def inverse_kinematics(x, y):
     if np.abs(d) > 1:
         return None, None  # No solution (out of reach)
 
-    theta2 = np.arctan2(np.sqrt(1 - d**2), d)  # Elbow up solution
-    theta1 = np.arctan2(y, x) - np.arctan2(L2 * np.sin(theta2), L1 + L2 * np.cos(theta2))
+    cos_theta2 = (x**2 + y**2 - L1**2 - L2**2) / (2*L1*L2)
+    sin_theta2 = (1-cos_theta2**2)**(1/2)
 
-    return np.degrees(theta1), np.degrees(theta2)
+    theta2_solution1 = math.degrees(math.atan2(sin_theta2, cos_theta2))
+    theta1_solution1 = math.degrees(math.atan2(y,x) - math.atan2((L2*math.sin(math.radians(theta2_solution1))) , (L1 + L2*math.cos(math.radians(theta2_solution1)))))
+    theta2_solution2 = math.degrees(math.atan2(-sin_theta2, cos_theta2))
+    theta1_solution2 = math.degrees(math.atan2(y,x) - math.atan2((L2*math.sin(math.radians(theta2_solution2))) , (L1 + L2*math.cos(math.radians(theta2_solution2)))))
+
+    theta1_chosen = theta1_solution1 if (theta1_solution1 > min_valid_theta1_deg and theta1_solution1 < max_valid_theta1_deg and theta2_solution1 > min_valid_theta2_deg and theta2_solution1 < max_valid_theta2_deg) else theta1_solution2
+    theta2_chosen = theta2_solution1 if theta1_chosen == theta1_solution1 else theta2_solution2
+
+    return theta1_chosen, theta2_chosen
 
 def plot_robot(theta1, theta2):
     """Plot the 2-DOF robot arm with angle arcs"""
