@@ -39,7 +39,7 @@ class PID_Controller(Node):
         self.target_sub = self.create_subscription(Float64MultiArray, 'desiredJoint', self.target_callback, 10)
         self.joint_state_sub = self.create_subscription(Float32MultiArray, 'joint_states', self.joint_state_callback, 10)
 
-        self.timer = self.create_timer(1.0, self.updatePID)
+        self.timer = self.create_timer(0.001, self.updatePID)
 
         self.get_logger().info('Ready to control!!')
 
@@ -71,12 +71,12 @@ class PID_Controller(Node):
         error2 = self.current_position[1] - self.desired_position[1]
 
         self.integral[0] += error1 * self.deltaTime
-        self.integral[0] = constrain(self.integral[0], 100, -100)
+        self.integral[0] = constrain(self.integral[0], -100, 100)
         self.integral[1] += error2 * self.deltaTime
-        self.integral[1] = constrain(self.integral[1], 100, -100)
+        self.integral[1] = constrain(self.integral[1], -100, 100)
 
         derivative1 = (self.current_position[0] - self.lastInput[0]) / self.deltaTime
-        derivative2 = (self.current_position[1] - self.lastInput[1]) / self.deltaTime
+        derivative2 = (self.current_position[1] - self.lastInput[1]) / self.deltaTime   
 
         self.control_signals[0] = self.Kp[0]*error1 + self.Ki[0]*self.integral[0] + self.Kd[0]*derivative1
         self.control_signals[1] = self.Kp[1]*error2 + self.Ki[1]*self.integral[1] + self.Kd[1]*derivative2
