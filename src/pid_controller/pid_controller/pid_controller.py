@@ -24,22 +24,24 @@ class PID_Controller(Node):
 
 
         # PID parameters 
-        self.kp = [kp1, kp2]
-        self.ki = [ki1, ki2]
-        self.kd = [kd1, kd2]
+        self.Kp = [kp1, kp2]
+        self.Ki = [ki1, ki2]
+        self.Kd = [kd1, kd2]
 
         self.lastInput = [0.0, 0.0]
         self.integral = [0.0, 0.0]
-        self.lastTime = 0.0
-        self.deltaTime = 0.0
+        self.lastTime = self.get_clock().now()
+        self.deltaTime = self.get_clock().now()
 
         
         # ROS interfaces
         self.publisher = self.create_publisher(Float64MultiArray, 'control_law', 10)
-        self.target_sub = self.create_subscription(Float64MultiArray, 'desiredAnglesPID', self.target_callback, 10)
+        self.target_sub = self.create_subscription(Float64MultiArray, 'desiredJoint', self.target_callback, 10)
         self.joint_state_sub = self.create_subscription(Float32MultiArray, 'joint_states', self.joint_state_callback, 10)
 
-        self.timer = self.create_timer(0.001, self.updatePID)
+        self.timer = self.create_timer(1.0, self.updatePID)
+
+        self.get_logger().info('Ready to control!!')
 
 
     def target_callback(self, msg):
