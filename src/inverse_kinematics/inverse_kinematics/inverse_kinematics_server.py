@@ -26,7 +26,7 @@ import math
 from typing import Tuple
 from rclpy.node import Node
 from desired_position_pkg.srv import DesiredPosition
-from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import Float32MultiArray
 
 class JointAngleSolution():
     def __init__(self, theta1_solution1, theta2_solution1, theta1_solution2, theta2_solution2):
@@ -40,7 +40,7 @@ class InverseKinematicsServer(Node):
     def __init__(self):
         super().__init__('inverse_kinematics_service')
         self.srv = self.create_service(DesiredPosition, 'desiredPosition', self.handle_position_request)
-        self.publisher = self.create_publisher(Float64MultiArray, 'desiredJoint', 10)
+        self.publisher = self.create_publisher(Float32MultiArray, 'desired_Joint', 10)
         self.get_logger().info("Inverse Kinematics Service is ready.")
 
         # TODO adjust these values to real ones
@@ -135,7 +135,7 @@ class InverseKinematicsServer(Node):
         '''
         Publish solution angles (theta1, theta2) to get to position (x, y) to desiredAnglesPID topic.
         '''
-        msg = Float64MultiArray()
+        msg = Float32MultiArray()
         msg.data = [theta1, theta2]
         self.publisher.publish(msg)
         self.get_logger().info(f"Published joint angles: ({theta1}, {theta2})")
