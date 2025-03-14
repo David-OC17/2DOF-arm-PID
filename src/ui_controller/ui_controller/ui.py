@@ -68,8 +68,8 @@ def plot_robot(theta1, theta2):
 st.title("2-DOF Arm Controller")
 
 st.subheader("🔧 Inverse Kinematics Control")
-x = st.number_input("End-Effector X (cm)", value=5.0, step=0.1)
-y = st.number_input("End-Effector Y (cm)", value=5.0, step=0.1)
+x = st.number_input("End-Effector X (mm)", value=208.0, step=10.0)
+y = st.number_input("End-Effector Y (mm)", value=0.0, step=10.0)
 
 # Add a "Send" button to flush output to stdout only when clicked
 if st.button("Send"):
