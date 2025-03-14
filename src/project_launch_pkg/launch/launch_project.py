@@ -1,4 +1,3 @@
-import launch
 from launch import LaunchDescription
 from launch_ros.actions import Node
 
@@ -16,6 +15,12 @@ def generate_launch_description():
             package='inverse_kinematics',    # Package name
             executable='inverse_kinematics_server',  # Executable name
             name='inverse_kinematics_server',  # Node name
+            output='screen',                 # Output to screen
+        ),
+        Node(
+            package='pid_controller',    # Package name
+            executable='pid_controller',  # Executable name
+            name='pid_controller',  # Node name
             output='screen',                 # Output to screen
         ),
     ])

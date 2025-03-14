@@ -4,8 +4,6 @@ Calculate the required (voltage1, voltage2) for the motors from some desired ref
 (velocity1, velocity2, theta1, theta2) given by a topic desiredJoint. (Angular velocity)
 '''
 
-import time
-# ROS
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Float64MultiArray, Float32MultiArray
@@ -18,10 +16,10 @@ class PID_Controller(Node):
         super().__init__('pid_controller_node')
         # Variables
         self.current_position = [0.0, 0.0]
+        self.current_velocity = [0.0, 0.0]
         self.desired_position = [0.0, 0.0]
         self.desired_velocity = [0.0, 0.0]
         self.control_signals = [0.0, 0.0]
-
 
         # PID parameters 
         self.Kp = [kp1, kp2]
@@ -35,9 +33,9 @@ class PID_Controller(Node):
 
         
         # ROS interfaces
-        self.publisher = self.create_publisher(Float64MultiArray, 'control_law', 10)
+        self.publisher = self.create_publisher(Float32MultiArray, 'control_law', 10)
         self.target_sub = self.create_subscription(Float64MultiArray, 'desiredJoint', self.target_callback, 10)
-        self.joint_state_sub = self.create_subscription(Float32MultiArray, 'joint_states', self.joint_state_callback, 10)
+        self.joint_state_sub = self.create_subscription(Float32MultiArray, 'joint_state', self.joint_state_callback, 10)
 
         self.timer = self.create_timer(0.001, self.updatePID)
 
@@ -55,17 +53,16 @@ class PID_Controller(Node):
     def joint_state_callback(self, msg):
         ''' Update actual state  '''
         if len(msg.data) == 4:
-            self.actual_vel = list(msg.data[0:2])
-            self.current_position = list(msg.data[2:4])
+            self.current_position = list(msg.data[0:2])
+            self.current_velocity = list(msg.data[2:4])
         else:
             self.get_logger().error("Invalid joint_states message. Expected 4 elements.")
 
     def updatePID(self):
         ''' Compute control output using latest available data '''
-    
         current_time = self.get_clock().now()
         self.deltaTime = (current_time - self.lastTime).nanoseconds / 1000000000.0
-        self.lastTime = self.get_clock().now()
+        self.lastTime = self.get_clock().now() # Update for the next iteration
 
         error1 = self.current_position[0] - self.desired_position[0]
         error2 = self.current_position[1] - self.desired_position[1]
@@ -80,6 +77,9 @@ class PID_Controller(Node):
 
         self.control_signals[0] = self.Kp[0]*error1 + self.Ki[0]*self.integral[0] + self.Kd[0]*derivative1
         self.control_signals[1] = self.Kp[1]*error2 + self.Ki[1]*self.integral[1] + self.Kd[1]*derivative2
+
+        # self.control_signals[0] = self.Kp[0]*error1 + self.Ki[0]*self.integral[0] + self.Kd[0]*self.current_velocity[0]
+        # self.control_signals[1] = self.Kp[1]*error2 + self.Ki[1]*self.integral[1] + self.Kd[1]*self.current_velocity[1]
 
         self.control_signals[0] = constrain(self.control_signals[0], -255, 255)
         self.control_signals[1] = constrain(self.control_signals[1], -255, 255)
