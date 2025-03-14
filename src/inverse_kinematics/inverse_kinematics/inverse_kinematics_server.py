@@ -23,6 +23,7 @@ bool valid_position
 
 import rclpy
 import math
+import serial
 from typing import Tuple
 from rclpy.node import Node
 from desired_position_pkg.srv import DesiredPosition
@@ -54,6 +55,8 @@ class InverseKinematicsServer(Node):
 
         self.max_valid_theta1_deg = 190
         self.max_valid_theta2_deg = 150
+
+        self.uart = serial.Serial('/dev/ttyUSB0', 115200, timeout=1)
     
     def handle_position_request(self, request, response):
         x, y = request.desired_x, request.desired_y
@@ -139,6 +142,11 @@ class InverseKinematicsServer(Node):
         msg.data = [theta1, theta2]
         self.publisher.publish(msg)
         self.get_logger().info(f"Published joint angles: ({theta1}, {theta2})")
+
+        # Enviar por UART
+        uart_message = f"{theta1:.2f},{theta2:.2f}\n"
+        self.uart.write(uart_message.encode('utf-8'))
+        self.get_logger().info(f"Sent via UART: {uart_message.strip()}")
 
 def main():
     rclpy.init()
